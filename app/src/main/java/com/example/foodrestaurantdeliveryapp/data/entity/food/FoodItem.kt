@@ -2,6 +2,7 @@ package com.example.foodrestaurantdeliveryapp.data.entity.food
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -13,6 +14,10 @@ import androidx.room.PrimaryKey
             childColumns = ["categoryId"],
             onDelete = ForeignKey.RESTRICT
         )
+    ],
+    indices = [
+        Index(value = ["categoryId"], unique = false, name = "idx_food_items_categoryId"),
+        Index(value = ["name"], unique = false, name = "idx_food_items_name")
     ]
 )
 data class FoodItem(

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address"> Address </string>
+    <string name="delivery_fee"> Delivery Fee</string>
+    <string name="unknown">Unknown</string>
+</resources>

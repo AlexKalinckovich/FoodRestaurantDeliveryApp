@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="address"> Адрес </string>
+    <string name="delivery_fee"> Стоимость доставки</string>
+    <string name="unknown">Неизвестно</string>
+</resources>
