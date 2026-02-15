@@ -37,7 +37,7 @@ import com.example.foodrestaurantdeliveryapp.data.entity.user.User
         PaymentMethod::class,
         PaymentStatus::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FoodDatabase : RoomDatabase() {

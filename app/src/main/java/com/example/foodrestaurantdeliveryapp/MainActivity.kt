@@ -19,7 +19,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.foodrestaurantdeliveryapp.data.DatabaseInitializer
-import com.example.foodrestaurantdeliveryapp.ui.navigation.FoodNavHost
+import com.example.foodrestaurantdeliveryapp.ui.FoodNavHost
 import com.example.foodrestaurantdeliveryapp.ui.theme.FoodRestaurantDeliveryAppTheme
 import com.example.foodrestaurantdeliveryapp.ui.view_model.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         val navController = rememberNavController()
+
                         FoodNavHost(navController = navController)
                     }
                 }
@@ -70,8 +71,11 @@ class MainActivity : ComponentActivity() {
 
     private fun createLocalizedContext(context: Context, langCode: String): Context {
         val locale = Locale.forLanguageTag(langCode)
+
         val config = Configuration(context.resources.configuration)
+
         config.setLocale(locale)
+
         return context.createConfigurationContext(config)
     }
 }

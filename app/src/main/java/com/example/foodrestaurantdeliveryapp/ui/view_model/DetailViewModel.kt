@@ -1,29 +1,44 @@
 package com.example.foodrestaurantdeliveryapp.ui.view_model
-
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodrestaurantdeliveryapp.data.repository.RestaurantRepository
+import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuWithDetails
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
+import com.example.foodrestaurantdeliveryapp.data.repository.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    restaurantRepository: RestaurantRepository
+    private val restaurantRepository: RestaurantRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val restaurantId: Int = savedStateHandle.get<Int>("restaurantId") ?: 0
+    private val restaurantId: Int = savedStateHandle["restaurantId"] ?: -1
+    private val _uiState = MutableStateFlow(DetailUiState())
+    val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
-    val uiState: StateFlow<Restaurant?> =
-        restaurantRepository.getRestaurantStream(restaurantId)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = null
-            )
+    init {
+        if (restaurantId != -1) {
+
+            viewModelScope.launch {
+                restaurantRepository.getRestaurantStream(restaurantId).collect { restaurant ->
+                    _uiState.update { it.copy(restaurant = restaurant) }
+                }
+            }
+
+            viewModelScope.launch {
+                restaurantRepository.getMenuForRestaurant(restaurantId).collect { menu ->
+                    _uiState.update { it.copy(menuItems = menu) }
+                }
+            }
+        }
+    }
 }
+
+data class DetailUiState(
+    val restaurant: Restaurant? = null,
+    val menuItems: List<MenuWithDetails> = emptyList()
+)
