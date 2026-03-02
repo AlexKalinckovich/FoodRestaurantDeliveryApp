@@ -2,9 +2,9 @@ package com.example.foodrestaurantdeliveryapp.ui.view_model
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuWithDetails
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
-import com.example.foodrestaurantdeliveryapp.data.repository.RestaurantRepository
+import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
+import com.example.foodrestaurantdeliveryapp.data.repository.model.restaurant.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

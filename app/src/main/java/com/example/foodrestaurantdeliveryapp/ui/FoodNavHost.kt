@@ -9,7 +9,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.foodrestaurantdeliveryapp.ui.screen.DetailScreen
+import com.example.foodrestaurantdeliveryapp.ui.screen.FoodProductSearchScreen
 import com.example.foodrestaurantdeliveryapp.ui.screen.HomeScreen
+import com.example.foodrestaurantdeliveryapp.ui.screen.MenuEntryEditScreen
 import com.example.foodrestaurantdeliveryapp.ui.screen.SettingsScreen
 
 @Composable
@@ -27,7 +29,27 @@ fun FoodNavHost(
                 navigateToDetail = {
                     restaurantId -> navController.navigate("detail/$restaurantId")
                 },
-                navigateToSettings = { navController.navigate("settings") }
+                navigateToSettings = { navController.navigate("settings") },
+                navigateToProductSearch = { navController.navigate("food_product_search") }
+            )
+        }
+
+        composable("restaurant/{restaurantId}") { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId")?.toIntOrNull() ?: 0
+            DetailScreen(
+                navigateBack = { navController.popBackStack() },
+                onAddMenuItem = { restId ->
+                    navController.navigate("add_menu_item/$restId")
+                },
+                onEditMenuItem = { menuId ->
+                    navController.navigate("edit_menu_item/$menuId")
+                }
+            )
+        }
+
+        composable("food_product_search") {
+            FoodProductSearchScreen(
+                navigateBack = { navController.popBackStack() }
             )
         }
 
@@ -38,8 +60,35 @@ fun FoodNavHost(
             val restaurantId = backStackEntry.arguments?.getInt("restaurantId") ?: 0
             DetailScreen(
                 navigateBack = { navController.popBackStack() },
-                viewModel = hiltViewModel()
+                onAddMenuItem = { restId -> navController.navigate("add_menu_item/$restId") },
+                onEditMenuItem = { menuId -> navController.navigate("edit_menu_item/$menuId") },
             )
+        }
+
+        composable("add_menu_item/{restaurantId}",
+            arguments = listOf(navArgument("restaurantId") { type = NavType.IntType })) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getInt("restaurantId")
+            if (restaurantId != null) {
+                MenuEntryEditScreen(
+                    navigateBack = { navController.popBackStack() }
+                )
+            } else {
+                navController.popBackStack()
+            }
+        }
+
+        composable(
+            route = "edit_menu_item/{menuId}",
+            arguments = listOf(navArgument("menuId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val menuId = backStackEntry.arguments?.getInt("menuId")
+            if (menuId != null) {
+                MenuEntryEditScreen(
+                    navigateBack = { navController.popBackStack() }
+                )
+            } else {
+                navController.popBackStack()
+            }
         }
 
         composable(route = "settings") {

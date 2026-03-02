@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.example.foodrestaurantdeliveryapp.data.FoodDatabase
 import com.example.foodrestaurantdeliveryapp.data.dao.food.CategoryDao
 import com.example.foodrestaurantdeliveryapp.data.dao.food.FoodDao
+import com.example.foodrestaurantdeliveryapp.data.dao.food.FoodProductDao
 import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuEntryDao
 import com.example.foodrestaurantdeliveryapp.data.dao.restaurant.RestaurantDao
 import dagger.Module
@@ -35,6 +36,12 @@ object DatabaseModule {
     @Singleton
     fun provideRestaurantDao(database: FoodDatabase): RestaurantDao {
         return database.restaurantDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFoodProductDao(database: FoodDatabase): FoodProductDao {
+        return database.foodProductDao()
     }
 
     @Provides

@@ -1,7 +1,7 @@
 package com.example.foodrestaurantdeliveryapp.di
 
 import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuEntryDao
-import com.example.foodrestaurantdeliveryapp.data.repository.RestaurantRepository
+import com.example.foodrestaurantdeliveryapp.data.repository.model.restaurant.RestaurantRepository
 import com.example.foodrestaurantdeliveryapp.data.dao.restaurant.RestaurantDao
 import dagger.Module
 import dagger.Provides

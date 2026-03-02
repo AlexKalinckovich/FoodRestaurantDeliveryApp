@@ -1,5 +1,4 @@
-package com.example.foodrestaurantdeliveryapp.data.repository
-
+package com.example.foodrestaurantdeliveryapp.data.repository.model.category
 
 import com.example.foodrestaurantdeliveryapp.data.dao.food.CategoryDao
 import com.example.foodrestaurantdeliveryapp.data.entity.food.Category
@@ -15,9 +14,11 @@ class CategoryRepository @Inject constructor(
     fun getAllCategories() : Flow<List<Category>> {
         return categoryDao.getAllCategories();
     }
-    suspend fun insertCategories(vararg categories: Category) {
-        categories.forEach { categoryDao.insert(category = it) }
-    }
+    suspend fun insertCategory(category: Category): Long = categoryDao.insert(category)
 
     suspend fun isEmpty(): Boolean = categoryDao.getCount() == 0
+
+    suspend fun deleteAll() {
+        categoryDao.deleteAll()
+    }
 }

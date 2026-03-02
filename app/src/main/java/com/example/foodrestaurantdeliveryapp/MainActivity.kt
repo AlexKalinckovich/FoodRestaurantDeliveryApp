@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.foodrestaurantdeliveryapp.data.DatabaseInitializer
 import com.example.foodrestaurantdeliveryapp.ui.FoodNavHost
+import com.example.foodrestaurantdeliveryapp.ui.theme.AppTheme
 import com.example.foodrestaurantdeliveryapp.ui.theme.FoodRestaurantDeliveryAppTheme
 import com.example.foodrestaurantdeliveryapp.ui.view_model.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,14 +40,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         databaseInitializer.initialize()
+
         setContent {
-            val langCode by settingsViewModel.languageCode.collectAsState()
-            val localizedContext = remember(langCode) {
-                createLocalizedContext(this, langCode)
+            val langCode: String by settingsViewModel.languageCode.collectAsState()
+            val localizedContext = remember(key1 = langCode) {
+                createLocalizedContext(context = this, langCode)
             }
 
-            CompositionLocalProvider(LocalLocalizedContext provides localizedContext) {
-                val appTheme by settingsViewModel.appTheme.collectAsState()
+            CompositionLocalProvider(value = LocalLocalizedContext.provides(value = localizedContext)) {
+                val appTheme: AppTheme by settingsViewModel.appTheme.collectAsState()
                 FoodRestaurantDeliveryAppTheme(appTheme = appTheme) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -70,11 +72,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun createLocalizedContext(context: Context, langCode: String): Context {
-        val locale = Locale.forLanguageTag(langCode)
+        val locale: Locale = Locale.forLanguageTag(langCode)
 
-        val config = Configuration(context.resources.configuration)
-
-        config.setLocale(locale)
+        val config = Configuration(context.resources.configuration).also {
+            it.setLocale(locale)
+        }
 
         return context.createConfigurationContext(config)
     }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="kebab">Шаурма</string>
+    <string name="burgers">Бургеры</string>
+    <string name="pizza">Пицца</string>
+    <string name="chicken"> Курица </string>
+    <string name="all"> Все </string>
+</resources>

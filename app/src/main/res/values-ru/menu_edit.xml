@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_menu_item">Добавить еду</string>
+    <string name="edit_menu_item">Редактировать еду</string>
+    <string name="name">Имя</string>
+    <string name="description">Описание</string>
+    <string name="image_url">URL изображения</string>
+    <string name="price">Цена</string>
+    <string name="available">Доступеность</string>
+    <string name="cancel">Отмена</string>
+    <string name="save">Сохранить</string>
+    <string name="category">Категория</string>
+    <string name="close">Закрыть</string>
+</resources>

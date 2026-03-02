@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +30,7 @@ import com.example.foodrestaurantdeliveryapp.ui.view_model.HomeViewModel
 @Composable
 fun HomeScreen(
     navigateToDetail: (Int) -> Unit,
+    navigateToProductSearch: () -> Unit,
     navigateToSettings: () -> Unit,
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -42,6 +44,9 @@ fun HomeScreen(
                     IconButton(onClick = navigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = localizedString(R.string.settings))
                     }
+                    IconButton(onClick = {navigateToProductSearch() }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search Products")
+                    }
                 }
             )
         },
@@ -49,7 +54,8 @@ fun HomeScreen(
             FloatingActionButton(onClick = { homeViewModel.addSampleRestaurant() }) {
                 Icon(Icons.Default.Add, contentDescription = localizedString(R.string.add))
             }
-        }
+        },
+
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             CategoryChips(
@@ -63,7 +69,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.restaurants) { restaurant ->
+                items(items = uiState.restaurants) { restaurant ->
                     RestaurantCard(
                         restaurant = restaurant,
                         onItemClick = { navigateToDetail(restaurant.restaurantId) },
@@ -82,14 +88,14 @@ fun CategoryChips(
     onCategorySelected: (Int?) -> Unit
 ) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         item {
             FilterChip(
                 selected = selectedCategoryId == null,
                 onClick = { onCategorySelected(null) },
-                label = { Text("Все") }
+                label = { Text(localizedString(R.string.all)) }
             )
         }
         items(categories) { category ->
@@ -132,7 +138,7 @@ fun RestaurantCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(restaurant.name, style = MaterialTheme.typography.titleMedium)
                 Text(restaurant.address, style = MaterialTheme.typography.bodySmall)
-                Text("Доставка: ${restaurant.deliveryFee}", style = MaterialTheme.typography.labelSmall)
+                Text("${localizedString(R.string.delivery_fee)}: ${restaurant.deliveryFee}", style = MaterialTheme.typography.labelSmall)
             }
             IconButton(onClick = onDeleteClick) {
                 Icon(Icons.Default.Delete, contentDescription = localizedString(R.string.delete))

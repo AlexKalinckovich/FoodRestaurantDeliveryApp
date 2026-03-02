@@ -1,9 +1,9 @@
-package com.example.foodrestaurantdeliveryapp.data.repository
+package com.example.foodrestaurantdeliveryapp.data.repository.model.restaurant
 
 import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuEntryDao
-import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuWithDetails
 import com.example.foodrestaurantdeliveryapp.data.dao.restaurant.RestaurantDao
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
+import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -24,9 +24,7 @@ class RestaurantRepository @Inject constructor(
         return menuDao.getMenuForRestaurant(restaurantId)
     }
 
-    suspend fun insertRestaurant(restaurant: Restaurant) {
-        restaurantDao.insert(restaurant)
-    }
+    suspend fun insertRestaurant(restaurant: Restaurant): Long = restaurantDao.insert(restaurant)
 
     suspend fun deleteRestaurant(restaurant: Restaurant) {
         restaurantDao.delete(restaurant)
@@ -34,5 +32,9 @@ class RestaurantRepository @Inject constructor(
 
     suspend fun updateRestaurant(restaurant: Restaurant) {
         restaurantDao.update(restaurant)
+    }
+
+    suspend fun deleteAll() {
+        restaurantDao.deleteAll()
     }
 }

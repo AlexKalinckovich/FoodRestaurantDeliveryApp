@@ -18,7 +18,11 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _appTheme = MutableStateFlow<AppTheme>(value = AppTheme.SYSTEM)
+    private val _languageCode = MutableStateFlow(value = "en")
+
     val appTheme: StateFlow<AppTheme> = _appTheme.asStateFlow()
+
+    val languageCode: StateFlow<String> = _languageCode.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -28,18 +32,6 @@ class SettingsViewModel @Inject constructor(
                     _appTheme.value = theme
                 }
         }
-    }
-
-    fun setTheme(theme: AppTheme) {
-        viewModelScope.launch {
-            userPreferencesRepo.setTheme(theme)
-        }
-    }
-
-    private val _languageCode = MutableStateFlow(value = "en")
-    val languageCode: StateFlow<String> = _languageCode.asStateFlow()
-
-    init {
         viewModelScope.launch {
             userPreferencesRepo.languageFlow
                 .distinctUntilChanged()
@@ -48,6 +40,14 @@ class SettingsViewModel @Inject constructor(
                 }
         }
     }
+
+
+    fun setTheme(theme: AppTheme) {
+        viewModelScope.launch {
+            userPreferencesRepo.setTheme(theme)
+        }
+    }
+
 
     fun setLanguage(langCode: String) {
         viewModelScope.launch {

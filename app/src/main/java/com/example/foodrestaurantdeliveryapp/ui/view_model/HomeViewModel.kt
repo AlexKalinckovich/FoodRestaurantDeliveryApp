@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodrestaurantdeliveryapp.data.entity.food.Category
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
-import com.example.foodrestaurantdeliveryapp.data.repository.CategoryRepository
-import com.example.foodrestaurantdeliveryapp.data.repository.RestaurantRepository
+import com.example.foodrestaurantdeliveryapp.data.repository.model.category.CategoryRepository
+import com.example.foodrestaurantdeliveryapp.data.repository.model.restaurant.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +17,7 @@ class HomeViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
+    private val _uiState = MutableStateFlow(value = HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
@@ -47,17 +47,6 @@ class HomeViewModel @Inject constructor(
         
     }
 
-    
-    val filteredRestaurants: StateFlow<List<Restaurant>> = combine(
-        _uiState.map { it.restaurants },
-        _uiState.map { it.selectedCategoryId }
-    ) { restaurants, selectedId ->
-        if (selectedId == null) {
-            restaurants
-        } else {
-            restaurants
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 }
 
 data class HomeUiState(

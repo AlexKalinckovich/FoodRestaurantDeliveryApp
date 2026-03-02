@@ -1,13 +1,35 @@
 package com.example.foodrestaurantdeliveryapp.ui.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,43 +38,56 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.foodrestaurantdeliveryapp.R
-import com.example.foodrestaurantdeliveryapp.data.dao.menu.MenuWithDetails
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
+import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
 import com.example.foodrestaurantdeliveryapp.localizedString
+import com.example.foodrestaurantdeliveryapp.ui.view_model.DetailUiState
 import com.example.foodrestaurantdeliveryapp.ui.view_model.DetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     navigateBack: () -> Unit,
-    viewModel: DetailViewModel = hiltViewModel()
+    onAddMenuItem: (Int) -> Unit,
+    onEditMenuItem: (Int) -> Unit,
+    detailViewModel: DetailViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val detailUiState: DetailUiState by detailViewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.restaurant?.name ?: "") },
+                title = { Text(text = detailUiState.restaurant?.name ?: "") },
                 navigationIcon = {
                     IconButton(onClick = navigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedString(R.string.back))
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedString(R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { detailUiState.restaurant?.restaurantId?.let { onAddMenuItem(it) } }
+                    ) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = localizedString(R.string.add_menu_item))
                     }
                 }
             )
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(paddingValues = innerPadding)) {
-            uiState.restaurant?.let { restaurant ->
+            detailUiState.restaurant?.let { restaurant ->
                 RestaurantHeader(restaurant)
             }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(all = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(space = 8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.menuItems) { menuItem ->
-                    MenuItemCard(menuItem)
+                items(detailUiState.menuItems) { menuItem ->
+                    MenuItemCard(
+                        item = menuItem,
+                        onEditClick = onEditMenuItem
+                    )
                 }
             }
         }
@@ -71,7 +106,7 @@ fun RestaurantHeader(restaurant: Restaurant) {
                 .clip(shape = RoundedCornerShape(size = 12.dp)),
             contentScale = ContentScale.Crop
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(height = 8.dp))
         Text(text = restaurant.name, style = MaterialTheme.typography.headlineSmall)
         Text(text = restaurant.address, style = MaterialTheme.typography.bodyMedium)
         Text(
@@ -82,14 +117,17 @@ fun RestaurantHeader(restaurant: Restaurant) {
 }
 
 @Composable
-fun MenuItemCard(item: MenuWithDetails) {
+fun MenuItemCard(
+    item: MenuWithDetails,
+    onEditClick: (Int) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(all = 12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -97,12 +135,12 @@ fun MenuItemCard(item: MenuWithDetails) {
                 model = item.imageUrl,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(size = 60.dp)
-                    .clip(shape = RoundedCornerShape(8.dp)),
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(width = 12.dp))
-            Column(modifier = Modifier.weight(weight = 1f)) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = item.name, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = item.description,
@@ -114,6 +152,9 @@ fun MenuItemCard(item: MenuWithDetails) {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+            IconButton(onClick = { onEditClick(item.menuId) }) {
+                Icon(imageVector = Icons.Filled.Edit, contentDescription = localizedString(R.string.edit_menu_item))
             }
         }
     }
