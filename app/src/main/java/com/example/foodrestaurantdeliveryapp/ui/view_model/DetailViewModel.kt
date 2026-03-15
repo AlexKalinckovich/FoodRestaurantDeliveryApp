@@ -1,4 +1,5 @@
 package com.example.foodrestaurantdeliveryapp.ui.view_model
+
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,19 +17,17 @@ class DetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val restaurantId: Int = savedStateHandle["restaurantId"] ?: -1
+    private val restaurantId: String? = savedStateHandle["restaurantId"]
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
     init {
-        if (restaurantId != -1) {
-
+        if (!restaurantId.isNullOrBlank()) {
             viewModelScope.launch {
-                restaurantRepository.getRestaurantStream(restaurantId).collect { restaurant ->
+                restaurantRepository.getRestaurantById(restaurantId).collect { restaurant ->
                     _uiState.update { it.copy(restaurant = restaurant) }
                 }
             }
-
             viewModelScope.launch {
                 restaurantRepository.getMenuForRestaurant(restaurantId).collect { menu ->
                     _uiState.update { it.copy(menuItems = menu) }

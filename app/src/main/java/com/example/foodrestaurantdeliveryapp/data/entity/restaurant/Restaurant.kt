@@ -1,27 +1,21 @@
 package com.example.foodrestaurantdeliveryapp.data.entity.restaurant
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.annotation.Keep
+import com.google.firebase.firestore.IgnoreExtraProperties
 
-@Entity(
-    tableName = "restaurants",
-    indices = [
-        Index(value = ["name"], unique = true, name = "idx_restaurants_name"),
-        Index(value = ["address"], unique = false, name = "idx_restaurants_address"),
-        Index(value = ["deliveryFee"], unique = false, name = "idx_restaurants_delivery_fee")
-    ]
-)
+@Keep
+@IgnoreExtraProperties
 data class Restaurant(
-
-    @PrimaryKey(autoGenerate = true)
-    val restaurantId: Int = 0,
-
-    val name: String,
-
-    val address: String,
-
-    val deliveryFee: String,
-
-    val imageUrl: String
-)
+    val restaurantId: String = "",
+    val name: String = "",
+    val nameLowercase: String = name.lowercase(),
+    val address: String = "",
+    val addressLowercase: String = address.lowercase(),
+    val deliveryFee: Double = 0.0,
+    val imageUrl: String = "",
+    val searchTokens: List<String> = emptyList(),
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+) {
+    constructor() : this("", "", "", "", "", 0.0, "", emptyList(), 0L, 0L)
+}

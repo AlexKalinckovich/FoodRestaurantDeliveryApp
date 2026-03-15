@@ -26,30 +26,12 @@ import com.example.foodrestaurantdeliveryapp.data.entity.user.User
 
 @Database(
     entities = [
-        User::class,
-        Restaurant::class,
-        Category::class,
-        FoodItem::class,
-        MenuEntry::class,
-        MasterOrder::class,
-        RestaurantOrder::class,
-        OrderItem::class,
-        OrderStatus::class,
-        Payment::class,
-        PaymentMethod::class,
-        PaymentStatus::class,
         FoodProduct::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class FoodDatabase : RoomDatabase() {
-
-    abstract fun restaurantDao(): RestaurantDao
-    abstract fun foodDao(): FoodDao
-    abstract fun menuDao(): MenuEntryDao
-
-    abstract fun categoryDao() : CategoryDao
 
     abstract fun foodProductDao(): FoodProductDao
     companion object {

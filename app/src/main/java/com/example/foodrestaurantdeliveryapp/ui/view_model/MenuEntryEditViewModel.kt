@@ -9,6 +9,7 @@ import com.example.foodrestaurantdeliveryapp.data.entity.menu.MenuEntry
 import com.example.foodrestaurantdeliveryapp.data.repository.model.category.CategoryRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.food.FoodRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.MenuEntryRepository
+import com.example.foodrestaurantdeliveryapp.utils.SearchTokenGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,9 +27,8 @@ class MenuEntryEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val NO_ID = -1
-    private val restaurantId: Int = savedStateHandle["restaurantId"] ?: NO_ID
-    private val menuId: Int = savedStateHandle["menuId"] ?: NO_ID
+    private val restaurantId: String? = savedStateHandle["restaurantId"]
+    private val menuId: String? = savedStateHandle["menuId"]
 
     private val _uiState = MutableStateFlow(MenuEntryEditUiState())
     val uiState: StateFlow<MenuEntryEditUiState> = _uiState.asStateFlow()
@@ -37,8 +37,8 @@ class MenuEntryEditViewModel @Inject constructor(
         viewModelScope.launch {
             loadCategories()
             when {
-                menuId != NO_ID -> loadForEdit()
-                restaurantId != NO_ID -> setupAddMode()
+                menuId != null -> loadForEdit(menuId)
+                restaurantId != null -> setupAddMode(restaurantId)
                 else -> setInvalidArgumentsError()
             }
         }
@@ -69,7 +69,7 @@ class MenuEntryEditViewModel @Inject constructor(
         _uiState.update { it.copy(isAvailable = !it.isAvailable) }
     }
 
-    fun selectCategory(categoryId: Int) {
+    fun selectCategory(categoryId: String) {
         _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
 
@@ -92,7 +92,7 @@ class MenuEntryEditViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadForEdit() {
+    private suspend fun loadForEdit(menuId: String) {
         _uiState.update { it.copy(isLoading = true) }
         try {
             val entry = menuEntryRepository.getMenuEntryWithFood(menuId)
@@ -104,7 +104,7 @@ class MenuEntryEditViewModel @Inject constructor(
                         name = entry.foodItem.name,
                         description = entry.foodItem.description,
                         imageUrl = entry.foodItem.imageUrl,
-                        price = entry.menuEntry.price,
+                        price = entry.menuEntry.price.toString(),
                         isAvailable = entry.menuEntry.isAvailable,
                         selectedCategoryId = entry.foodItem.categoryId,
                         isLoading = false
@@ -118,7 +118,7 @@ class MenuEntryEditViewModel @Inject constructor(
         }
     }
 
-    private fun setupAddMode() {
+    private fun setupAddMode(restaurantId: String) {
         _uiState.update {
             it.copy(
                 mode = MenuEntryEditUiState.Mode.ADD,
@@ -138,6 +138,10 @@ class MenuEntryEditViewModel @Inject constructor(
         if (state.name.isBlank()) errors["name"] = "Name is required"
         if (state.price.isBlank()) errors["price"] = "Price is required"
         if (state.selectedCategoryId == null) errors["category"] = "Category is required"
+        // Проверяем, что price можно преобразовать в Double
+        if (state.price.isNotBlank() && state.price.toDoubleOrNull() == null) {
+            errors["price"] = "Price must be a valid number"
+        }
         _uiState.update { it.copy(validationErrors = errors) }
         return errors.isEmpty()
     }
@@ -146,20 +150,38 @@ class MenuEntryEditViewModel @Inject constructor(
         val state = _uiState.value
         val restaurantId = requireNotNull(state.restaurantId) { "Restaurant ID missing" }
         val categoryId = requireNotNull(state.selectedCategoryId) { "Category not selected" }
+        val priceValue = state.price.toDoubleOrNull()
+            ?: throw IllegalArgumentException("Invalid price format")
 
+        // Получаем название категории (для денормализации)
+        val categoryName = state.categories.find { it.categoryId == categoryId }?.name
+            ?: throw IllegalStateException("Category not found")
+
+        // Создаём FoodItem (ID сгенерируется автоматически в репозитории)
         val foodItem = FoodItem(
             categoryId = categoryId,
+            categoryName = categoryName,
             name = state.name,
             description = state.description,
-            imageUrl = state.imageUrl
+            imageUrl = state.imageUrl,
+            searchTokens = SearchTokenGenerator.generateTokens(state.name) +
+                    SearchTokenGenerator.generateTokens(state.description)
         )
-        val foodId = foodRepository.insertFoodItem(foodItem).toInt()
+        val foodId = foodRepository.insertFoodItem(foodItem)
 
+        // Создаём MenuEntry
         val menuEntry = MenuEntry(
             restaurantId = restaurantId,
+            restaurantName = "", // можно получить из репозитория ресторана, но для упрощения оставим пустым
             foodId = foodId,
-            price = state.price,
-            isAvailable = state.isAvailable
+            foodName = state.name,
+            foodDescription = state.description,
+            foodImageUrl = state.imageUrl,
+            price = priceValue,
+            isAvailable = state.isAvailable,
+            categoryId = categoryId,
+            category = categoryName,
+            searchTokens = SearchTokenGenerator.generateTokens(state.name)
         )
         menuEntryRepository.insertMenuEntry(menuEntry)
     }
@@ -168,22 +190,36 @@ class MenuEntryEditViewModel @Inject constructor(
         val state = _uiState.value
         val menuId = requireNotNull(state.menuId) { "Menu ID missing" }
         val categoryId = requireNotNull(state.selectedCategoryId) { "Category not selected" }
+        val priceValue = state.price.toDoubleOrNull()
+            ?: throw IllegalArgumentException("Invalid price format")
 
         val existing = requireNotNull(menuEntryRepository.getMenuEntryWithFood(menuId)) {
             "Menu entry not found"
         }
 
+        val categoryName = state.categories.find { it.categoryId == categoryId }?.name
+            ?: existing.foodItem.categoryName
+
         val updatedFood = existing.foodItem.copy(
             categoryId = categoryId,
+            categoryName = categoryName,
             name = state.name,
             description = state.description,
-            imageUrl = state.imageUrl
+            imageUrl = state.imageUrl,
+            searchTokens = SearchTokenGenerator.generateTokens(state.name) +
+                    SearchTokenGenerator.generateTokens(state.description)
         )
         foodRepository.updateFoodItem(updatedFood)
 
         val updatedMenu = existing.menuEntry.copy(
-            price = state.price,
-            isAvailable = state.isAvailable
+            price = priceValue,
+            isAvailable = state.isAvailable,
+            foodName = state.name,
+            foodDescription = state.description,
+            foodImageUrl = state.imageUrl,
+            categoryId = categoryId,
+            category = categoryName,
+            searchTokens = SearchTokenGenerator.generateTokens(state.name)
         )
         menuEntryRepository.updateMenuEntry(updatedMenu)
     }
@@ -196,10 +232,10 @@ data class MenuEntryEditUiState(
     val price: String = "",
     val isAvailable: Boolean = true,
     val mode: Mode = Mode.ADD,
-    val restaurantId: Int? = null,
-    val menuId: Int? = null,
+    val restaurantId: String? = null,
+    val menuId: String? = null,
     val categories: List<Category> = emptyList(),
-    val selectedCategoryId: Int? = null,
+    val selectedCategoryId: String? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val errorMessage: String? = null,

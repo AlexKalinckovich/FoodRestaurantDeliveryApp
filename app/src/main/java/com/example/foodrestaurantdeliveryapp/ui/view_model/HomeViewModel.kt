@@ -17,7 +17,7 @@ class HomeViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(value = HomeUiState())
+    private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
@@ -33,7 +33,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun selectCategory(categoryId: Int?) {
+    fun selectCategory(categoryId: String?) {
         _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
 
@@ -44,13 +44,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun addSampleRestaurant() {
-        
+        // TODO: реализовать добавление примера
     }
-
 }
 
 data class HomeUiState(
     val restaurants: List<Restaurant> = emptyList(),
     val categories: List<Category> = emptyList(),
-    val selectedCategoryId: Int? = null
+    val selectedCategoryId: String? = null
 )

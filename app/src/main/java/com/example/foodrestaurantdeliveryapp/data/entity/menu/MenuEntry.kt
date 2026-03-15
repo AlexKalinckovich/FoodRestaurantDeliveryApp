@@ -1,44 +1,26 @@
 package com.example.foodrestaurantdeliveryapp.data.entity.menu
 
+import androidx.annotation.Keep
+import com.google.firebase.firestore.IgnoreExtraProperties
 
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.PrimaryKey
-import com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem
-import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
-
-@Entity(
-    tableName = "menu_entries",
-    foreignKeys = [
-        ForeignKey(
-            entity = Restaurant::class,
-            parentColumns = ["restaurantId"],
-            childColumns = ["restaurantId"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = FoodItem::class,
-            parentColumns = ["foodId"],
-            childColumns = ["foodId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [
-        Index(value = ["restaurantId"], unique = false, name = "idx_menu_entries_restaurantId"),
-        Index(value = ["foodId"], unique = false, name = "idx_menu_entries_foodId"),
-        Index(value = ["restaurantId", "foodId"], unique = true, name = "idx_menu_entries_restaurantId_foodId_unique")
-    ]
-)
+@Keep
+@IgnoreExtraProperties
 data class MenuEntry(
-    @PrimaryKey(autoGenerate = true)
-    val menuId: Int = 0,
-
-    val restaurantId: Int,
-
-    val foodId: Int,
-
-    val price: String,
-
-    val isAvailable: Boolean
-)
+    val menuEntryId: String = "",
+    val restaurantId: String = "",
+    val restaurantName: String = "",
+    val foodId: String = "",
+    val foodName: String = "",
+    val foodDescription: String = "",
+    val foodImageUrl: String = "",
+    val price: Double = 0.0,
+    val currency: String = "USD",
+    val isAvailable: Boolean = false,
+    val categoryId: String? = null,
+    val category: String? = null,
+    val searchTokens: List<String> = emptyList(),
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+) {
+    constructor() : this("", "", "", "", "", "", "", 0.0, "USD", false, null, null, emptyList(), 0L, 0L)
+}

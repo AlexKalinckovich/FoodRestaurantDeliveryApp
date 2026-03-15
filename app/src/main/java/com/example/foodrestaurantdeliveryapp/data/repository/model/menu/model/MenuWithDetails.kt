@@ -1,7 +1,7 @@
 package com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model
 
 data class MenuWithDetails(
-    val menuId: Int,
+    val menuId: String,
 
     val name: String,
 
@@ -9,7 +9,7 @@ data class MenuWithDetails(
 
     val imageUrl: String,
 
-    val price: String,
+    val price: Double,
 
     val isAvailable: Boolean
 )

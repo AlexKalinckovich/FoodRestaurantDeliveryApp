@@ -1,64 +1,145 @@
 package com.example.foodrestaurantdeliveryapp.data.dao.menu
 
-
-import androidx.room.Dao
-import androidx.room.Embedded
-import androidx.room.Insert
-import androidx.room.Query
-import androidx.room.Update
-import com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem
 import com.example.foodrestaurantdeliveryapp.data.entity.menu.MenuEntry
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuEntryWithFood
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
+import com.google.firebase.firestore.AggregateSource
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
+class MenuEntryDao @Inject constructor(
+    private val firestore: FirebaseFirestore
+) {
+    private val collection = firestore.collection("menuEntries")
 
+    fun getMenuForRestaurant(restaurantId: String): Flow<List<MenuWithDetails>> = callbackFlow {
+        val registration = collection
+            .whereEqualTo("restaurantId", restaurantId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val menuEntries = snapshot.toObjects(MenuEntry::class.java)
+                    trySend(menuEntries.map { it.toMenuWithDetails() })
+                }
+            }
+        awaitClose { registration.remove() }
+    }
 
+    fun getAll(): Flow<List<MenuEntry>> = callbackFlow {
+        val registration = collection.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            if (snapshot != null) {
+                trySend(snapshot.toObjects(MenuEntry::class.java))
+            }
+        }
+        awaitClose { registration.remove() }
+    }
 
+    suspend fun insertAll(vararg menuEntries: MenuEntry) {
+        val batch = firestore.batch()
+        menuEntries.forEach { entry ->
+            val docRef = collection.document()
+            val item = entry.copy(menuEntryId = docRef.id)
+            batch.set(docRef, item)
+        }
+        batch.commit().await()
+    }
 
-@Dao
-interface MenuEntryDao {
+    suspend fun getMenuEntryWithFood(menuId: String): MenuEntryWithFood? {
+        val document = collection.document(menuId).get().await()
+        val entry = document.toObject(MenuEntry::class.java) ?: return null
+        val foodItem = com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem(
+            foodId = entry.foodId,
+            categoryId = entry.categoryId ?: "",
+            categoryName = entry.category ?: "",
+            name = entry.foodName,
+            nameLowercase = entry.foodName.lowercase(),
+            description = entry.foodDescription,
+            descriptionLowercase = entry.foodDescription.lowercase(),
+            imageUrl = entry.foodImageUrl,
+            searchTokens = emptyList(),
+            createdAt = entry.createdAt,
+            updatedAt = entry.updatedAt
+        )
+        return MenuEntryWithFood(
+            menuEntry = entry,
+            foodItem = foodItem
+        )
+    }
 
-    @Query("""
-        SELECT 
-            m.menuId,
-            f.name, 
-            f.description, 
-            f.imageUrl, 
-            m.price, 
-            m.isAvailable 
-        FROM menu_entries m
-        INNER JOIN food_items f ON m.foodId = f.foodId
-        WHERE m.restaurantId = :restaurantId
-    """)
-    fun getMenuForRestaurant(restaurantId: Int): Flow<List<MenuWithDetails>>
+    suspend fun getMenuEntry(menuId: String): MenuEntry? {
+        return collection.document(menuId).get().await()
+            .toObject(MenuEntry::class.java)
+    }
 
-    @Insert
-    suspend fun insertAll(vararg menuEntries: MenuEntry)
+    suspend fun updateMenuEntry(menuEntry: MenuEntry) {
+        collection.document(menuEntry.menuEntryId).set(menuEntry).await()
+    }
 
-    @Query("""
-    SELECT 
-        m.*,
-        f.foodId AS food_foodId,
-        f.categoryId AS food_categoryId,
-        f.name AS food_name,
-        f.description AS food_description,
-        f.imageUrl AS food_imageUrl
-    FROM menu_entries m
-    INNER JOIN food_items f ON m.foodId = f.foodId
-    WHERE m.menuId = :menuId
-""")
-    suspend fun getMenuEntryWithFood(menuId: Int): MenuEntryWithFood?
+    suspend fun insertMenuEntry(menuEntry: MenuEntry): String {
+        val docRef = collection.document()
+        val item = menuEntry.copy(menuEntryId = docRef.id)
+        docRef.set(item).await()
+        return docRef.id
+    }
 
-    @Query("SELECT * FROM menu_entries WHERE menuId = :menuId")
-    suspend fun getMenuEntry(menuId: Int): MenuEntry?
+    suspend fun deleteAll() {
+        val snapshot = collection.get().await()
+        val batch = firestore.batch()
+        snapshot.documents.forEach { batch.delete(it.reference) }
+        batch.commit().await()
+    }
 
-    @Update
-    suspend fun updateMenuEntry(menuEntry: MenuEntry)
+    suspend fun searchByTokens(tokens: List<String>): List<MenuEntry> {
+        if (tokens.isEmpty()) return getAll().first()
+        val results = mutableListOf<MenuEntry>()
+        for (token in tokens) {
+            val snapshot = collection
+                .whereGreaterThanOrEqualTo("searchTokens", token)
+                .whereLessThanOrEqualTo("searchTokens", token + "\uf8ff")
+                .get()
+                .await()
+            results.addAll(snapshot.toObjects(MenuEntry::class.java))
+        }
+        return results.distinctBy { it.menuEntryId }
+    }
 
-    @Insert
-    suspend fun insertMenuEntry(menuEntry: MenuEntry): Long
+    suspend fun getByRestaurantAndFood(restaurantId: String, foodId: String): MenuEntry? {
+        val snapshot = collection
+            .whereEqualTo("restaurantId", restaurantId)
+            .whereEqualTo("foodId", foodId)
+            .get()
+            .await()
+        return snapshot.documents.firstOrNull()?.toObject(MenuEntry::class.java)
+    }
 
-    @Query("DELETE FROM menu_entries")
-    suspend fun deleteAll()
+    suspend fun getCount(): Int {
+        val snapshot = collection.count().get(AggregateSource.SERVER).await()
+        return snapshot.count.toInt()
+    }
+}
+
+private fun MenuEntry.toMenuWithDetails(): MenuWithDetails {
+    return MenuWithDetails(
+        menuId = menuEntryId,
+        name = foodName,
+        description = foodDescription,
+        imageUrl = foodImageUrl,
+        price = price,
+        isAvailable = isAvailable
+    )
 }

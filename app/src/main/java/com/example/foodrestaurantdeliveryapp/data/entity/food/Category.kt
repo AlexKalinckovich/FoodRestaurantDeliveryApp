@@ -1,18 +1,17 @@
 package com.example.foodrestaurantdeliveryapp.data.entity.food
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.annotation.Keep
+import com.google.firebase.firestore.IgnoreExtraProperties
 
-@Entity(
-    tableName = "categories",
-    indices = [
-        Index(value = ["name"], unique = true, name = "idx_categories_name_unique")
-    ]
-)
+@Keep
+@IgnoreExtraProperties
 data class Category(
-    @PrimaryKey(autoGenerate = true)
-    val categoryId: Int = 0,
-
-    val name: String
-)
+    val categoryId: String = "",
+    val name: String = "",
+    val nameLowercase: String = name.lowercase(),
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+) {
+    // Explicit no-arg constructor for Firestore
+    constructor() : this("", "", "", 0L, 0L)
+}

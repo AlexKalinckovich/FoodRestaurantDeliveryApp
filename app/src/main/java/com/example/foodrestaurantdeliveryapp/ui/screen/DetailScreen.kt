@@ -48,8 +48,8 @@ import com.example.foodrestaurantdeliveryapp.ui.view_model.DetailViewModel
 @Composable
 fun DetailScreen(
     navigateBack: () -> Unit,
-    onAddMenuItem: (Int) -> Unit,
-    onEditMenuItem: (Int) -> Unit,
+    onAddMenuItem: (String) -> Unit,
+    onEditMenuItem: (String) -> Unit,
     detailViewModel: DetailViewModel = hiltViewModel()
 ) {
     val detailUiState: DetailUiState by detailViewModel.uiState.collectAsState()
@@ -60,27 +60,33 @@ fun DetailScreen(
                 title = { Text(text = detailUiState.restaurant?.name ?: "") },
                 navigationIcon = {
                     IconButton(onClick = navigateBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedString(R.string.back))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = localizedString(R.string.back)
+                        )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { detailUiState.restaurant?.restaurantId?.let { onAddMenuItem(it) } }
                     ) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = localizedString(R.string.add_menu_item))
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = localizedString(R.string.add_menu_item)
+                        )
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(paddingValues = innerPadding)) {
+        Column(modifier = Modifier.padding(innerPadding)) {
             detailUiState.restaurant?.let { restaurant ->
                 RestaurantHeader(restaurant)
             }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(all = 16.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(detailUiState.menuItems) { menuItem ->
@@ -102,15 +108,15 @@ fun RestaurantHeader(restaurant: Restaurant) {
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(height = 125.dp)
-                .clip(shape = RoundedCornerShape(size = 12.dp)),
+                .height(125.dp)
+                .clip(RoundedCornerShape(12.dp)),
             contentScale = ContentScale.Crop
         )
-        Spacer(modifier = Modifier.height(height = 8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(text = restaurant.name, style = MaterialTheme.typography.headlineSmall)
         Text(text = restaurant.address, style = MaterialTheme.typography.bodyMedium)
         Text(
-            text = "${localizedString(R.string.delivery_fee)}: ${restaurant.deliveryFee}",
+            text = "${localizedString(R.string.delivery_fee)}: ${restaurant.deliveryFee} руб",
             style = MaterialTheme.typography.bodyMedium
         )
     }
@@ -119,7 +125,7 @@ fun RestaurantHeader(restaurant: Restaurant) {
 @Composable
 fun MenuItemCard(
     item: MenuWithDetails,
-    onEditClick: (Int) -> Unit
+    onEditClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -127,7 +133,7 @@ fun MenuItemCard(
     ) {
         Row(
             modifier = Modifier
-                .padding(all = 12.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -148,13 +154,16 @@ fun MenuItemCard(
                     maxLines = 2
                 )
                 Text(
-                    text = item.price,
+                    text = "${item.price} руб",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
             IconButton(onClick = { onEditClick(item.menuId) }) {
-                Icon(imageVector = Icons.Filled.Edit, contentDescription = localizedString(R.string.edit_menu_item))
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = localizedString(R.string.edit_menu_item)
+                )
             }
         }
     }

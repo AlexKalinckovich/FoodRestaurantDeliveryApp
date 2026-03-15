@@ -29,7 +29,7 @@ import com.example.foodrestaurantdeliveryapp.ui.view_model.HomeViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navigateToDetail: (Int) -> Unit,
+    navigateToDetail: (String) -> Unit,
     navigateToProductSearch: () -> Unit,
     navigateToSettings: () -> Unit,
     homeViewModel: HomeViewModel = hiltViewModel()
@@ -44,7 +44,7 @@ fun HomeScreen(
                     IconButton(onClick = navigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = localizedString(R.string.settings))
                     }
-                    IconButton(onClick = {navigateToProductSearch() }) {
+                    IconButton(onClick = navigateToProductSearch) {
                         Icon(Icons.Default.Search, contentDescription = "Search Products")
                     }
                 }
@@ -54,8 +54,7 @@ fun HomeScreen(
             FloatingActionButton(onClick = { homeViewModel.addSampleRestaurant() }) {
                 Icon(Icons.Default.Add, contentDescription = localizedString(R.string.add))
             }
-        },
-
+        }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             CategoryChips(
@@ -84,11 +83,11 @@ fun HomeScreen(
 @Composable
 fun CategoryChips(
     categories: List<Category>,
-    selectedCategoryId: Int?,
-    onCategorySelected: (Int?) -> Unit
+    selectedCategoryId: String?,
+    onCategorySelected: (String?) -> Unit
 ) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         item {
@@ -138,7 +137,10 @@ fun RestaurantCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(restaurant.name, style = MaterialTheme.typography.titleMedium)
                 Text(restaurant.address, style = MaterialTheme.typography.bodySmall)
-                Text("${localizedString(R.string.delivery_fee)}: ${restaurant.deliveryFee}", style = MaterialTheme.typography.labelSmall)
+                Text(
+                    "${localizedString(R.string.delivery_fee)}: ${restaurant.deliveryFee} руб",
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
             IconButton(onClick = onDeleteClick) {
                 Icon(Icons.Default.Delete, contentDescription = localizedString(R.string.delete))

@@ -7,11 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,7 +44,10 @@ fun MenuEntryEditScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = navigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedString(R.string.back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = localizedString(R.string.back)
+                        )
                     }
                 }
             )
@@ -71,9 +72,7 @@ fun MenuEntryEditScreen(
                     onSave = {
                         viewModel.save(
                             onSuccess = navigateBack,
-                            onError = { error ->
-                                // Здесь можно показать Snackbar, но для простоты игнорируем
-                            }
+                            onError = { /* показать ошибку */ }
                         )
                     },
                     onCancel = navigateBack,
@@ -93,18 +92,19 @@ fun MenuEntryForm(
     onImageUrlChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
     onAvailableToggle: () -> Unit,
-    onCategorySelected: (Int) -> Unit,
+    onCategorySelected: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     var expanded: Boolean by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .padding(16.dp)
             .imePadding()
-            .verticalScroll(scrollState),  // Добавлено!
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         OutlinedTextField(
@@ -140,18 +140,18 @@ fun MenuEntryForm(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
-            val fillMaxWidth = Modifier
-                .fillMaxWidth()
             OutlinedTextField(
                 value = uiState.categories.find { it.categoryId == uiState.selectedCategoryId }?.name ?: "",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(localizedString(R.string.category)) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = fillMaxWidth.menuAnchor(
-                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                    enabled = true
-                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                        enabled = true
+                    ),
                 isError = uiState.validationErrors.containsKey("category"),
                 supportingText = {
                     uiState.validationErrors["category"]?.let { Text(it) }
