@@ -1,10 +1,12 @@
 package com.example.foodrestaurantdeliveryapp.data.dao.menu
 
+import com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem
 import com.example.foodrestaurantdeliveryapp.data.entity.menu.MenuEntry
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuEntryWithFood
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
 import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.WriteBatch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -50,7 +52,7 @@ class MenuEntryDao @Inject constructor(
     }
 
     suspend fun insertAll(vararg menuEntries: MenuEntry) {
-        val batch = firestore.batch()
+        val batch: WriteBatch = firestore.batch()
         menuEntries.forEach { entry ->
             val docRef = collection.document()
             val item = entry.copy(menuEntryId = docRef.id)
@@ -62,7 +64,7 @@ class MenuEntryDao @Inject constructor(
     suspend fun getMenuEntryWithFood(menuId: String): MenuEntryWithFood? {
         val document = collection.document(menuId).get().await()
         val entry = document.toObject(MenuEntry::class.java) ?: return null
-        val foodItem = com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem(
+        val foodItem = FoodItem(
             foodId = entry.foodId,
             categoryId = entry.categoryId ?: "",
             categoryName = entry.category ?: "",

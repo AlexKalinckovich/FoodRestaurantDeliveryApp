@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="search_restaurants">Найти рестораны…</string>
+    <string name="clear">Очистить</string>
+    <string name="sort_by">Отсортировать</string>
+    <string name="no_results_found">Рестораны не найдены</string>
+
+</resources>

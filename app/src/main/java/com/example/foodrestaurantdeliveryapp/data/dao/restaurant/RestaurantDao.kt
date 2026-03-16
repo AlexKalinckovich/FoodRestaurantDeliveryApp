@@ -71,9 +71,11 @@ class RestaurantDao @Inject constructor(
         snapshot.documents.forEach { batch.delete(it.reference) }
         batch.commit().await()
     }
-
     suspend fun searchByTokens(tokens: List<String>): List<Restaurant> {
-        if (tokens.isEmpty()) return getAllRestaurants().first()
+        if (tokens.isEmpty()) {
+            return getAllRestaurants().first()
+        }
+
         val results = mutableListOf<Restaurant>()
         for (token in tokens) {
             val nameSnapshot = collection
@@ -89,6 +91,19 @@ class RestaurantDao @Inject constructor(
                 .get()
                 .await()
             results.addAll(addressSnapshot.toObjects(Restaurant::class.java))
+        }
+        return results.distinctBy { it.restaurantId }
+    }
+
+    suspend fun searchByTokensWithArrayContains(tokens: List<String>): List<Restaurant> {
+        if (tokens.isEmpty()) return getAllRestaurants().first()
+        val results = mutableListOf<Restaurant>()
+        for (token in tokens.take(10)) {
+            val snapshot = collection
+                .whereArrayContains("searchTokens", token)
+                .get()
+                .await()
+            results.addAll(snapshot.toObjects(Restaurant::class.java))
         }
         return results.distinctBy { it.restaurantId }
     }
