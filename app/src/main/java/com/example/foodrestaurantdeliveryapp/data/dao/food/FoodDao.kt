@@ -3,11 +3,11 @@ package com.example.foodrestaurantdeliveryapp.data.dao.food
 import com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem
 import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,7 +19,9 @@ class FoodDao @Inject constructor(
     private val collection = firestore.collection("foodItems")
 
     suspend fun getFoodItem(foodId: String): FoodItem? {
-        return collection.document(foodId).get().await()
+        return collection.document(foodId)
+            .get(Source.SERVER)
+            .await()
             .toObject(FoodItem::class.java)
     }
 
@@ -52,7 +54,7 @@ class FoodDao @Inject constructor(
             val snapshot = collection
                 .whereGreaterThanOrEqualTo("nameLowercase", token)
                 .whereLessThanOrEqualTo("nameLowercase", token + "\uf8ff")
-                .get()
+                .get(Source.SERVER)
                 .await()
             results.addAll(snapshot.toObjects(FoodItem::class.java))
         }
@@ -60,6 +62,8 @@ class FoodDao @Inject constructor(
     }
 
     fun getAll(): Flow<List<FoodItem>> = callbackFlow {
+        trySend(emptyList())
+
         val registration = collection.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)
@@ -75,7 +79,7 @@ class FoodDao @Inject constructor(
     suspend fun getFoodByCategory(categoryId: String): List<FoodItem> {
         val snapshot = collection
             .whereEqualTo("categoryId", categoryId)
-            .get()
+            .get(Source.SERVER)
             .await()
         return snapshot.toObjects(FoodItem::class.java)
     }

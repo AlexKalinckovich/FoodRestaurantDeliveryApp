@@ -8,6 +8,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.foodrestaurantdeliveryapp.ui.screen.AuthScreen
 import com.example.foodrestaurantdeliveryapp.ui.screen.DetailScreen
 import com.example.foodrestaurantdeliveryapp.ui.screen.FoodProductSearchScreen
 import com.example.foodrestaurantdeliveryapp.ui.screen.HomeScreen
@@ -24,13 +25,26 @@ fun FoodNavHost(
         startDestination = "home",
         modifier = modifier
     ) {
-        composable(route = "home") {
+        composable("auth") {
+            AuthScreen(
+                onAuthSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("auth") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("home") {
             HomeScreen(
-                navigateToDetail = { restaurantId ->
-                    navController.navigate("detail/$restaurantId")
-                },
+                navigateToDetail = { restaurantId -> navController.navigate("detail/$restaurantId") },
                 navigateToSettings = { navController.navigate("settings") },
-                navigateToProductSearch = { navController.navigate("food_product_search") }
+                navigateToProductSearch = { navController.navigate("food_product_search") },
+                navigateToAuth = {
+                    navController.navigate("auth") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -58,9 +72,7 @@ fun FoodNavHost(
         ) { backStackEntry ->
             val restaurantId = backStackEntry.arguments?.getString("restaurantId")
             if (restaurantId != null) {
-                MenuEntryEditScreen(
-                    navigateBack = { navController.popBackStack() }
-                )
+                MenuEntryEditScreen(navigateBack = { navController.popBackStack() })
             } else {
                 navController.popBackStack()
             }
@@ -72,18 +84,14 @@ fun FoodNavHost(
         ) { backStackEntry ->
             val menuId = backStackEntry.arguments?.getString("menuId")
             if (menuId != null) {
-                MenuEntryEditScreen(
-                    navigateBack = { navController.popBackStack() }
-                )
+                MenuEntryEditScreen(navigateBack = { navController.popBackStack() })
             } else {
                 navController.popBackStack()
             }
         }
 
-        composable(route = "settings") {
-            SettingsScreen(
-                navigateBack = { navController.popBackStack() }
-            )
+        composable("settings") {
+            SettingsScreen(navigateBack = { navController.popBackStack() })
         }
     }
 }

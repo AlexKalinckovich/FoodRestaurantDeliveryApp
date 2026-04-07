@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.foodrestaurantdeliveryapp.data.entity.food.Category
 import com.example.foodrestaurantdeliveryapp.data.entity.food.FoodItem
 import com.example.foodrestaurantdeliveryapp.data.entity.menu.MenuEntry
+import com.example.foodrestaurantdeliveryapp.data.repository.auth.AuthRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.category.CategoryRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.food.FoodRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.MenuEntryRepository
@@ -24,6 +25,7 @@ class MenuEntryEditViewModel @Inject constructor(
     private val foodRepository: FoodRepository,
     private val menuEntryRepository: MenuEntryRepository,
     private val categoryRepository: CategoryRepository,
+    private val authRepository: AuthRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -35,6 +37,10 @@ class MenuEntryEditViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            if (!authRepository.isSignedIn()) {
+                _uiState.update { it.copy(errorMessage = "Authentication required", isLoading = false) }
+                return@launch
+            }
             loadCategories()
             when {
                 menuId != null -> loadForEdit(menuId)
@@ -74,6 +80,10 @@ class MenuEntryEditViewModel @Inject constructor(
     }
 
     fun save(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (!authRepository.isSignedIn()) {
+            onError("Please sign in to save changes")
+            return
+        }
         if (!validate()) return onError("Please fill all required fields")
 
         viewModelScope.launch {
@@ -138,7 +148,6 @@ class MenuEntryEditViewModel @Inject constructor(
         if (state.name.isBlank()) errors["name"] = "Name is required"
         if (state.price.isBlank()) errors["price"] = "Price is required"
         if (state.selectedCategoryId == null) errors["category"] = "Category is required"
-        // Проверяем, что price можно преобразовать в Double
         if (state.price.isNotBlank() && state.price.toDoubleOrNull() == null) {
             errors["price"] = "Price must be a valid number"
         }
@@ -153,11 +162,9 @@ class MenuEntryEditViewModel @Inject constructor(
         val priceValue = state.price.toDoubleOrNull()
             ?: throw IllegalArgumentException("Invalid price format")
 
-        // Получаем название категории (для денормализации)
         val categoryName = state.categories.find { it.categoryId == categoryId }?.name
             ?: throw IllegalStateException("Category not found")
 
-        // Создаём FoodItem (ID сгенерируется автоматически в репозитории)
         val foodItem = FoodItem(
             categoryId = categoryId,
             categoryName = categoryName,
@@ -169,10 +176,9 @@ class MenuEntryEditViewModel @Inject constructor(
         )
         val foodId = foodRepository.insertFoodItem(foodItem)
 
-        // Создаём MenuEntry
         val menuEntry = MenuEntry(
             restaurantId = restaurantId,
-            restaurantName = "", // можно получить из репозитория ресторана, но для упрощения оставим пустым
+            restaurantName = "",
             foodId = foodId,
             foodName = state.name,
             foodDescription = state.description,

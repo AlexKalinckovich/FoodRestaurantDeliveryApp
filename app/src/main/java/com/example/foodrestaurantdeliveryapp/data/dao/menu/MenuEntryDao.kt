@@ -6,12 +6,12 @@ import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.Me
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
 import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.WriteBatch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +23,8 @@ class MenuEntryDao @Inject constructor(
     private val collection = firestore.collection("menuEntries")
 
     fun getMenuForRestaurant(restaurantId: String): Flow<List<MenuWithDetails>> = callbackFlow {
+        trySend(emptyList())
+
         val registration = collection
             .whereEqualTo("restaurantId", restaurantId)
             .addSnapshotListener { snapshot, error ->
@@ -38,7 +40,27 @@ class MenuEntryDao @Inject constructor(
         awaitClose { registration.remove() }
     }
 
+    suspend fun getMenuForRestaurantOnce(restaurantId: String): List<MenuWithDetails> {
+        return try {
+            val snapshot = collection
+                .whereEqualTo("restaurantId", restaurantId)
+                .get(Source.SERVER)
+                .await()
+            val menuEntries = snapshot.toObjects(MenuEntry::class.java)
+            menuEntries.map { it.toMenuWithDetails() }
+        } catch (e: Exception) {
+            val snapshot = collection
+                .whereEqualTo("restaurantId", restaurantId)
+                .get(Source.SERVER)
+                .await()
+            val menuEntries = snapshot.toObjects(MenuEntry::class.java)
+            menuEntries.map { it.toMenuWithDetails() }
+        }
+    }
+
     fun getAll(): Flow<List<MenuEntry>> = callbackFlow {
+        trySend(emptyList())
+
         val registration = collection.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)
@@ -62,7 +84,7 @@ class MenuEntryDao @Inject constructor(
     }
 
     suspend fun getMenuEntryWithFood(menuId: String): MenuEntryWithFood? {
-        val document = collection.document(menuId).get().await()
+        val document = collection.document(menuId).get(Source.SERVER).await()
         val entry = document.toObject(MenuEntry::class.java) ?: return null
         val foodItem = FoodItem(
             foodId = entry.foodId,
@@ -84,7 +106,9 @@ class MenuEntryDao @Inject constructor(
     }
 
     suspend fun getMenuEntry(menuId: String): MenuEntry? {
-        return collection.document(menuId).get().await()
+        return collection.document(menuId)
+            .get(Source.SERVER)
+            .await()
             .toObject(MenuEntry::class.java)
     }
 
@@ -113,7 +137,7 @@ class MenuEntryDao @Inject constructor(
             val snapshot = collection
                 .whereGreaterThanOrEqualTo("searchTokens", token)
                 .whereLessThanOrEqualTo("searchTokens", token + "\uf8ff")
-                .get()
+                .get(Source.SERVER)
                 .await()
             results.addAll(snapshot.toObjects(MenuEntry::class.java))
         }
@@ -124,7 +148,7 @@ class MenuEntryDao @Inject constructor(
         val snapshot = collection
             .whereEqualTo("restaurantId", restaurantId)
             .whereEqualTo("foodId", foodId)
-            .get()
+            .get(Source.SERVER)
             .await()
         return snapshot.documents.firstOrNull()?.toObject(MenuEntry::class.java)
     }

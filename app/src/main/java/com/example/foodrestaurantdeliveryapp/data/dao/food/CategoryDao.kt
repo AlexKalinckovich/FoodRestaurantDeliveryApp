@@ -1,8 +1,10 @@
 package com.example.foodrestaurantdeliveryapp.data.dao.food
 
 import com.example.foodrestaurantdeliveryapp.data.entity.food.Category
+import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -18,6 +20,8 @@ class CategoryDao @Inject constructor(
     private val collection = firestore.collection("categories")
 
     fun getAllCategories(): Flow<List<Category>> = callbackFlow {
+        trySend(emptyList())
+
         val registration = collection
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -32,6 +36,22 @@ class CategoryDao @Inject constructor(
         awaitClose { registration.remove() }
     }
 
+    suspend fun getAllCategoriesOnce(): List<Category> {
+        return try {
+            val snapshot = collection
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get(Source.SERVER)
+                .await()
+            snapshot.toObjects(Category::class.java)
+        } catch (e: Exception) {
+            collection
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get(Source.SERVER)
+                .await()
+                .toObjects(Category::class.java)
+        }
+    }
+
     suspend fun insert(category: Category): String {
         val docRef = if (category.categoryId.isEmpty()) {
             collection.document()
@@ -44,7 +64,7 @@ class CategoryDao @Inject constructor(
     }
 
     suspend fun getCount(): Int {
-        val snapshot = collection.count().get(com.google.firebase.firestore.AggregateSource.SERVER).await()
+        val snapshot = collection.count().get(AggregateSource.SERVER).await()
         return snapshot.count.toInt()
     }
 
@@ -56,13 +76,13 @@ class CategoryDao @Inject constructor(
     }
 
     suspend fun searchByTokens(tokens: List<String>): List<Category> {
-        if (tokens.isEmpty()) return getAllCategories().first()
+        if (tokens.isEmpty()) return getAllCategoriesOnce()
         val results = mutableListOf<Category>()
         for (token in tokens) {
             val snapshot = collection
                 .whereGreaterThanOrEqualTo("nameLowercase", token)
                 .whereLessThanOrEqualTo("nameLowercase", token + "\uf8ff")
-                .get()
+                .get(Source.SERVER)
                 .await()
             results.addAll(snapshot.toObjects(Category::class.java))
         }
@@ -70,7 +90,9 @@ class CategoryDao @Inject constructor(
     }
 
     suspend fun getCategoryById(categoryId: String): Category? {
-        return collection.document(categoryId).get().await()
+        return collection.document(categoryId)
+            .get(Source.SERVER)
+            .await()
             .toObject(Category::class.java)
     }
 }

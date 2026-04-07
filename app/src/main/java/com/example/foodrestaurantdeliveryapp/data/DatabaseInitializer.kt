@@ -25,6 +25,9 @@ class DatabaseInitializer @Inject constructor(
     private val foodProductRepository: FoodProductRepository
 ) {
 
+    companion object{
+        var insertedRestaurants : MutableList<Restaurant> = mutableListOf();
+    }
     fun initialize(scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
         scope.launch {
             clearAllData()
@@ -95,6 +98,7 @@ class DatabaseInitializer @Inject constructor(
         val map = mutableMapOf<String, String>()
         restaurants.forEach { (name, restaurant) ->
             map[name] = restaurantRepository.insertRestaurant(restaurant)
+            insertedRestaurants.add(restaurant)
         }
         return map
     }

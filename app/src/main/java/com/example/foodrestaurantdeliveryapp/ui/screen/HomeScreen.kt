@@ -17,9 +17,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -50,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -66,12 +70,11 @@ fun HomeScreen(
     navigateToDetail: (String) -> Unit,
     navigateToProductSearch: () -> Unit,
     navigateToSettings: () -> Unit,
+    navigateToAuth: () -> Unit,
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by homeViewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-
-    
     LaunchedEffect(searchQuery) {
         homeViewModel.updateSearchQuery(searchQuery)
     }
@@ -81,6 +84,22 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(localizedString(R.string.app_name)) },
                 actions = {
+                    if (uiState.isSignedIn && uiState.userEmail != null) {
+                        Text(
+                            text = uiState.userEmail!! ,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(end = 4.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        IconButton(onClick = { homeViewModel.logout() }) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = localizedString(R.string.logout))
+                        }
+                    } else {
+                        IconButton(onClick = navigateToAuth) {
+                            Icon(Icons.Default.AccountCircle, contentDescription = localizedString(R.string.login))
+                        }
+                    }
                     IconButton(onClick = navigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = localizedString(R.string.settings))
                     }
@@ -97,7 +116,6 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -117,25 +135,21 @@ fun HomeScreen(
                 shape = RoundedCornerShape(24.dp)
             )
 
-            
             SortDropdown(
                 currentSort = uiState.sortOption,
                 onSortSelected = { homeViewModel.updateSortOption(it) }
             )
 
-            
             CategoryChips(
                 categories = uiState.categories,
                 selectedCategoryId = uiState.selectedCategoryId,
                 onCategorySelected = { homeViewModel.selectCategory(it) }
             )
 
-            
             if (uiState.isSearching) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
-            
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
@@ -143,7 +157,7 @@ fun HomeScreen(
             ) {
                 items(
                     items = uiState.displayedRestaurants,
-                    key = { it.restaurantId }
+                    key = { it.restaurantId.ifEmpty { it.hashCode().toString() } }
                 ) { restaurant ->
                     RestaurantCard(
                         restaurant = restaurant,
@@ -174,7 +188,6 @@ fun SortDropdown(
     onSortSelected: (SortOption) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it }
@@ -217,14 +230,17 @@ fun CategoryChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        item {
+        item(key = "all_chip") {
             FilterChip(
                 selected = selectedCategoryId == null,
                 onClick = { onCategorySelected(null) },
                 label = { Text(localizedString(R.string.all)) }
             )
         }
-        items(categories) { category ->
+        items(
+            items = categories,
+            key = { it.categoryId.ifEmpty { it.hashCode().toString() } }
+        ) { category ->
             FilterChip(
                 selected = selectedCategoryId == category.categoryId,
                 onClick = { onCategorySelected(category.categoryId) },

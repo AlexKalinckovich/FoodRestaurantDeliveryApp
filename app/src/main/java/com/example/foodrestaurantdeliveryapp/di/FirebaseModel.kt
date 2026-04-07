@@ -1,5 +1,6 @@
 package com.example.foodrestaurantdeliveryapp.di
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
@@ -28,4 +29,8 @@ object FirebaseModule {
         firestore.firestoreSettings = settings
         return firestore
     }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
 }

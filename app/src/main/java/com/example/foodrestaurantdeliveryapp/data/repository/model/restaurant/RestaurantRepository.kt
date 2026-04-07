@@ -5,9 +5,10 @@ import com.example.foodrestaurantdeliveryapp.data.dao.restaurant.RestaurantDao
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
 import com.example.foodrestaurantdeliveryapp.data.repository.model.menu.model.MenuWithDetails
 import com.example.foodrestaurantdeliveryapp.utils.SearchTokenGenerator
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.delay
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class RestaurantRepository @Inject constructor(
@@ -16,10 +17,36 @@ class RestaurantRepository @Inject constructor(
 ) {
     fun getAllRestaurants(): Flow<List<Restaurant>> = restaurantDao.getAllRestaurants()
 
+    suspend fun getAllRestaurantsWithRetry(maxRetries: Int = 3, delayMs: Long = 1000L): List<Restaurant> {
+        var attempts = 0
+        while (attempts < maxRetries) {
+            try {
+                val restaurants = restaurantDao.getAllRestaurantsOnce()
+                if (restaurants.isNotEmpty()) {
+                    return restaurants
+                }
+                attempts++
+                delay(delayMs * attempts)
+            } catch (e: Exception) {
+                attempts++
+                if (attempts >= maxRetries) throw e
+                delay(delayMs * attempts)
+            }
+        }
+        return emptyList()
+    }
+
+    suspend fun waitForInitialization(timeout: Long = 5000L): Boolean {
+        return restaurantDao.waitForData(timeout)
+    }
+
     fun getRestaurantById(id: String): Flow<Restaurant?> = restaurantDao.getRestaurantById(id)
 
     fun getMenuForRestaurant(restaurantId: String): Flow<List<MenuWithDetails>> =
         menuDao.getMenuForRestaurant(restaurantId)
+
+    suspend fun getMenuForRestaurantOnce(restaurantId: String): List<MenuWithDetails> =
+        menuDao.getMenuForRestaurantOnce(restaurantId)
 
     suspend fun insertRestaurant(
         name: String,
@@ -56,8 +83,6 @@ class RestaurantRepository @Inject constructor(
         restaurantDao.deleteAll()
     }
 
-
-
     suspend fun searchRestaurants(query: String): List<Restaurant> {
         val tokens = SearchTokenGenerator.generateTokensForSearch(query)
         return restaurantDao.searchByTokens(tokens)
@@ -71,15 +96,14 @@ class RestaurantRepository @Inject constructor(
 
     suspend fun searchByDeliveryFee(maxFee: Double): List<Restaurant> =
         restaurantDao.searchByDeliveryFee(maxFee)
-
 }
 
 fun List<Restaurant>.fuzzySearch(query: String, threshold: Int = 2): List<Restaurant> {
     val queryLower: String = query.lowercase().trim()
-    return filter {
-        restaurant -> restaurant.nameLowercase.contains(other = queryLower) ||
-                      restaurant.addressLowercase.contains(other = queryLower) ||
-                      levenshteinDistance(restaurant.nameLowercase, queryLower) <= threshold
+    return filter { restaurant ->
+        restaurant.nameLowercase.contains(queryLower) ||
+                restaurant.addressLowercase.contains(queryLower) ||
+                levenshteinDistance(restaurant.nameLowercase, queryLower) <= threshold
     }
 }
 
@@ -93,7 +117,6 @@ fun levenshteinDistance(s1: String, s2: String): Int {
     for (j in 0..n) {
         dp[0][j] = j
     }
-
     for (i in 1..m) {
         for (j in 1..n) {
             val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1

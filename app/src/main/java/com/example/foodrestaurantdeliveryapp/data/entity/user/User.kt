@@ -1,25 +1,17 @@
 package com.example.foodrestaurantdeliveryapp.data.entity.user
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.annotation.Keep
+import com.google.firebase.firestore.DocumentId
+import com.google.firebase.firestore.IgnoreExtraProperties
 
-@Entity(
-    tableName = "users",
-    indices = [Index(value = ["email"], unique = true)]
-)
+@Keep
+@IgnoreExtraProperties
 data class User(
-
-    @PrimaryKey(autoGenerate = true)
-    val userId: Int = 0,
-
-    val email: String,
-
-    val fullName: String,
-
-    val phone: String,
-
-    val passwordHash: String,
-
-    val salt: String
-)
+    @DocumentId val uid: String = "",
+    val email: String = "",
+    val role: String = "customer",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+) {
+    constructor() : this("", "", "customer", 0L, 0L)
+}

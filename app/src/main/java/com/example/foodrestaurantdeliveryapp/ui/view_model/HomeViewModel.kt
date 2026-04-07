@@ -2,8 +2,10 @@ package com.example.foodrestaurantdeliveryapp.ui.view_model
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.foodrestaurantdeliveryapp.data.DatabaseInitializer
 import com.example.foodrestaurantdeliveryapp.data.entity.food.Category
 import com.example.foodrestaurantdeliveryapp.data.entity.restaurant.Restaurant
+import com.example.foodrestaurantdeliveryapp.data.repository.auth.AuthRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.category.CategoryRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.restaurant.RestaurantRepository
 import com.example.foodrestaurantdeliveryapp.data.repository.model.restaurant.fuzzySearch
@@ -11,28 +13,35 @@ import com.example.foodrestaurantdeliveryapp.ui.SortOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val SEARCH_DELAY : Long = 300L
-private const val CLIENT_SITE_SEARCH_THRESHOLD : Int = 3
+private const val SEARCH_DELAY: Long = 300L
+private const val CLIENT_SITE_SEARCH_THRESHOLD: Int = 3
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val restaurantRepository: RestaurantRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow(HomeUiState())
     private var searchJob: Job? = null
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private var allRestaurants: List<Restaurant> = emptyList()
+    private var allRestaurants: List<Restaurant> = DatabaseInitializer.insertedRestaurants
 
     init {
         viewModelScope.launch {
             restaurantRepository.getAllRestaurants().collect { restaurants ->
-                allRestaurants = restaurants
+                if(restaurants.isNotEmpty()) {
+                    allRestaurants = restaurants
+                }
                 updateDisplayedRestaurants()
             }
         }
@@ -41,11 +50,27 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(categories = categories) }
             }
         }
+        viewModelScope.launch {
+            authRepository.currentUser.collect { user ->
+                _uiState.update {
+                    it.copy(
+                        userEmail = user?.email,
+                        isSignedIn = user != null
+                    )
+                }
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.signOut()
+        }
     }
 
     fun updateSearchQuery(query: String) {
-        searchJob?.cancel()  
-        searchJob = viewModelScope.launch {  
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             delay(timeMillis = SEARCH_DELAY)
             _uiState.update { it.copy(searchQuery = query) }
             updateDisplayedRestaurants()
@@ -66,11 +91,11 @@ class HomeViewModel @Inject constructor(
         val state = _uiState.value
         var filtered = allRestaurants
 
-        val searchQuery : String = state.searchQuery
+        val searchQuery: String = state.searchQuery
         if (searchQuery.isNotBlank()) {
             filtered = if (searchQuery.length < CLIENT_SITE_SEARCH_THRESHOLD) {
                 filtered.fuzzySearch(state.searchQuery)
-            }else{
+            } else {
                 restaurantRepository.searchRestaurantsFuzzy(searchQuery, allRestaurants = filtered)
             }
         }
@@ -82,7 +107,12 @@ class HomeViewModel @Inject constructor(
             SortOption.DELIVERY_FEE_DESC -> filtered.sortedByDescending { it.deliveryFee }
         }
 
-        _uiState.update { it.copy(displayedRestaurants = filtered) }
+        _uiState.update {
+            it.copy(
+                displayedRestaurants = filtered,
+                isSearching = searchQuery.isNotBlank()
+            )
+        }
     }
 
     fun deleteRestaurant(restaurant: Restaurant) {
@@ -97,7 +127,7 @@ class HomeViewModel @Inject constructor(
                 name = "Sample Restaurant",
                 address = "Sample Address",
                 deliveryFee = 99.0,
-                imageUrl = "https:"
+                imageUrl = "https://ik.imagekit.io/pb0e83twy8/smile.png"
             )
         }
     }
@@ -109,5 +139,8 @@ data class HomeUiState(
     val selectedCategoryId: String? = null,
     val searchQuery: String = "",
     val sortOption: SortOption = SortOption.NAME_ASC,
-    val isSearching: Boolean = false
+    val isSearching: Boolean = false,
+    val isLoading: Boolean = true,
+    val userEmail: String? = null,
+    val isSignedIn: Boolean = false
 )
